@@ -1,0 +1,12 @@
+appdirs==1.4.3
+docopt==0.6.2
+img2txt.py==2.3
+oauthlib==2.0.2
+olefile==0.44
+packaging==16.8
+Pillow==4.0.0
+pyparsing==2.2.0
+requests==2.13.0
+requests-oauthlib==0.8.0
+six==1.10.0
+tweepy==3.5.0
