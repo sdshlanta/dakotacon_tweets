@@ -1,26 +1,13 @@
 import tweepy
 import sys, subprocess, shutil, string, time
 
-CONSUMER_KEY = ""
-CONSUMER_SECRET = ""
-
-ACCESS_TOKEN = ""
-ACCESS_TOKEN_SECRET = ""
-
-TERM_GREEN = "\033[1;32;40m"
-TERM_WHITE = "\033[0;37;40m"
-
-LOGO = None
-
-IMAGE_WIDTH = 50
-LINE_DELAY = 0.0001
-ROW_DELAY = 1
-
-
 class DakotaConStreamListener(tweepy.StreamListener):
 
-	def __init__(self):
+    TERM_GREEN = "\033[1;32;40m"
+    TERM_WHITE = "\033[0;37;40m"
+	def __init__(self, logo = None, image_width = 50, line_delay = 0.0001, row_delay = 1):
 		super().__init__()
+
 
 		raw_term_size = shutil.get_terminal_size((50,50))
 
@@ -28,6 +15,10 @@ class DakotaConStreamListener(tweepy.StreamListener):
 		self.term_width = int(raw_term_size.columns)
 
 		self.count = 0
+        self.logo = logo
+        self.image_width = image_width
+        self.line_delay = line_delay
+        self.row_delay = row_delay
 		
 	def on_status(self, status):
 		tweet = status
@@ -41,7 +32,7 @@ class DakotaConStreamListener(tweepy.StreamListener):
 			image_url = tweet.entities["media"][0]["media_url"]
 			ascii_image = self.image_to_ascii(image_url)
 		else:
-			ascii_image = LOGO
+			ascii_image = self.logo
 
 			ascii_image = self.add_username_to_image(ascii_image, tweet.user.screen_name)
 
@@ -61,7 +52,7 @@ class DakotaConStreamListener(tweepy.StreamListener):
 		return True
 
 	def image_to_ascii(self, url):
-		ascii_image = subprocess.check_output(["jp2a", "--width=" + str(IMAGE_WIDTH), url], universal_newlines=True).rstrip()
+		ascii_image = subprocess.check_output(["jp2a", "--width=" + str(self.image_width), url], universal_newlines=True).rstrip()
 
 		return ascii_image
 
@@ -137,7 +128,7 @@ class DakotaConStreamListener(tweepy.StreamListener):
 
 		if divider:
 
-			line = line.ljust(width - IMAGE_WIDTH - 2, filler) # tweet column
+			line = line.ljust(width - self.image_width - 2, filler) # tweet column
 			line += "|"
 			line = line.ljust(width - 1, filler) # image column
 			line += "|"
@@ -145,7 +136,7 @@ class DakotaConStreamListener(tweepy.StreamListener):
 		else:
 			width -= len(line)
 			
-			line += text.center(width - IMAGE_WIDTH - 2, ".") # tweet column
+			line += text.center(width - self.image_width - 2, ".") # tweet column
 			line += "|"
 			line += ascii_image_row # image column
 			line += "|"
@@ -156,25 +147,39 @@ class DakotaConStreamListener(tweepy.StreamListener):
 
 		for c in line:
 			print(c, end="")
-			time.sleep(LINE_DELAY)
+			time.sleep(self.line_delay)
 			
 		print("\n", end="")
 
 		return
-		
-LOGO = subprocess.check_output(["jp2a", "--width=" + str(IMAGE_WIDTH), "logo.jpg"], universal_newlines=True).rstrip()
 
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+def main():
+    CONSUMER_KEY = ""
+    CONSUMER_SECRET = ""
 
-api = tweepy.API(auth)
+    ACCESS_TOKEN = ""
+    ACCESS_TOKEN_SECRET = ""
 
-dakotacon_listener = DakotaConStreamListener()
-dakotacon_stream = tweepy.Stream(auth=api.auth, listener=dakotacon_listener)
+    IMAGE_WIDTH = 50
+    LINE_DELAY = 0.0001
+    ROW_DELAY = 1
+    
+    LOGO = subprocess.check_output(["jp2a", "--width=" + str(IMAGE_WIDTH), "logo.jpg"], universal_newlines=True).rstrip()
 
-# Don't leave terminal bright green
-print(TERM_GREEN)
-try:
-	dakotacon_stream.filter(track=["dakotacon"])
-except:
-	print(TERM_WHITE)
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+
+    api = tweepy.API(auth)
+
+    dakotacon_listener = DakotaConStreamListener(LOGO, IMAGE_WIDTH, LINE_DELAY, ROW_DELAY)
+    dakotacon_stream = tweepy.Stream(auth=api.auth, listener=dakotacon_listener)
+
+    # Don't leave terminal bright green
+    print(DakotaConStreamListener.TERM_GREEN)
+    try:
+        dakotacon_stream.filter(track=["dakotacon"])
+    except:
+        print(DakotaConStreamListener.TERM_WHITE)
+
+if __name__ == '__main__':
+    main()		
